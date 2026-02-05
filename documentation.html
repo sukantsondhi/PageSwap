@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How PageSwap Works - Documentation</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <div class="logo">
+          <a href="index.html" class="logo-link">
+            <i class="fas fa-file-pdf"></i>
+            <h1>PageSwap</h1>
+          </a>
+        </div>
+        <nav class="header-nav">
+          <a href="index.html" class="nav-link">
+            <i class="fas fa-home"></i> Home
+          </a>
+          <a
+            href="https://github.com/sukantsondhi/PageSwap"
+            target="_blank"
+            class="nav-link"
+          >
+            <i class="fab fa-github"></i> GitHub
+          </a>
+        </nav>
+        <div class="header-actions">
+          <button
+            id="theme-toggle"
+            class="icon-btn"
+            title="Toggle Dark/Light Mode"
+          >
+            <i class="fas fa-moon"></i>
+          </button>
+          <a
+            href="mailto:page-swap@sukantsondhi.com"
+            class="icon-btn"
+            title="Contact Us"
+          >
+            <i class="fas fa-envelope"></i>
+          </a>
+        </div>
+      </header>
+
+      <!-- Documentation Content -->
+      <main class="documentation">
+        <section class="doc-hero">
+          <h2><i class="fas fa-book-open"></i> How PageSwap Works</h2>
+          <p class="subtitle">
+            Understanding our 100% local, privacy-first approach to PDF
+            manipulation
+          </p>
+        </section>
+
+        <!-- Privacy Section -->
+        <section class="doc-section">
+          <div class="doc-card highlight-card">
+            <div class="doc-icon">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3>Your Privacy is Our Priority</h3>
+            <p>
+              <strong
+                >PageSwap processes everything locally in your browser.</strong
+              >
+              Your PDF files are never uploaded to any server. They never leave
+              your device. We don't have servers to store your files -
+              everything happens right on your computer using JavaScript.
+            </p>
+          </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="doc-section">
+          <h3 class="section-title">
+            <i class="fas fa-cogs"></i> Technical Process
+          </h3>
+
+          <div class="process-steps">
+            <div class="process-step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h4><i class="fas fa-upload"></i> File Upload</h4>
+                <p>
+                  When you select or drop PDF files, they are read directly into
+                  your browser's memory using the
+                  <strong>FileReader API</strong>. The files are converted to an
+                  ArrayBuffer - a raw binary representation that stays in your
+                  browser's memory.
+                </p>
+                <div class="tech-badge">
+                  <i class="fab fa-js"></i> JavaScript FileReader API
+                </div>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h4><i class="fas fa-eye"></i> PDF Rendering</h4>
+                <p>
+                  We use <strong>PDF.js</strong>, Mozilla's open-source PDF
+                  rendering library, to parse and display your PDF pages. PDF.js
+                  runs entirely in JavaScript and renders each page to an HTML
+                  Canvas element for preview. This is the same technology
+                  Firefox uses to display PDFs.
+                </p>
+                <div class="tech-badge">
+                  <i class="fas fa-file-pdf"></i> Mozilla PDF.js
+                </div>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h4><i class="fas fa-arrows-alt"></i> Page Reordering</h4>
+                <p>
+                  The drag-and-drop functionality is powered by
+                  <strong>Sortable.js</strong>, a lightweight JavaScript
+                  library. When you drag pages around, we're simply reordering
+                  references in memory - the actual PDF data remains unchanged
+                  until export.
+                </p>
+                <div class="tech-badge">
+                  <i class="fas fa-grip-lines"></i> Sortable.js
+                </div>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h4><i class="fas fa-file-export"></i> PDF Creation</h4>
+                <p>
+                  When you export, we use <strong>pdf-lib</strong>, a powerful
+                  JavaScript library that can create and modify PDF documents.
+                  It extracts pages from your original PDFs (without re-encoding
+                  them) and combines them in your specified order. This
+                  preserves the <strong>original quality</strong> - no
+                  compression, no quality loss.
+                </p>
+                <div class="tech-badge">
+                  <i class="fas fa-magic"></i> pdf-lib
+                </div>
+              </div>
+            </div>
+
+            <div class="process-step">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h4><i class="fas fa-download"></i> Download</h4>
+                <p>
+                  The final PDF is created as a <strong>Blob</strong> (binary
+                  large object) in your browser's memory. We create a temporary
+                  download link and trigger the browser's native download
+                  function. The file goes directly to your downloads folder -
+                  never touching any server.
+                </p>
+                <div class="tech-badge">
+                  <i class="fas fa-save"></i> Blob API
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Data Flow Diagram -->
+        <section class="doc-section">
+          <h3 class="section-title">
+            <i class="fas fa-project-diagram"></i> Data Flow
+          </h3>
+          <div class="doc-card">
+            <div class="data-flow">
+              <div class="flow-item">
+                <i class="fas fa-file-pdf"></i>
+                <span>Your PDF Files</span>
+              </div>
+              <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+              <div class="flow-item">
+                <i class="fas fa-laptop"></i>
+                <span>Your Browser</span>
+              </div>
+              <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+              <div class="flow-item">
+                <i class="fas fa-memory"></i>
+                <span>Browser Memory</span>
+              </div>
+              <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+              <div class="flow-item">
+                <i class="fas fa-download"></i>
+                <span>Your Download</span>
+              </div>
+            </div>
+            <div class="flow-note">
+              <i class="fas fa-info-circle"></i>
+              <span
+                >Notice: No server involved! Everything stays on your
+                device.</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- What We DON'T Do -->
+        <section class="doc-section">
+          <h3 class="section-title">
+            <i class="fas fa-ban"></i> What We DON'T Do
+          </h3>
+          <div class="dont-list">
+            <div class="dont-item">
+              <i class="fas fa-times-circle"></i>
+              <div>
+                <strong>No Server Uploads</strong>
+                <p>Your files are never sent to any remote server</p>
+              </div>
+            </div>
+            <div class="dont-item">
+              <i class="fas fa-times-circle"></i>
+              <div>
+                <strong>No Data Collection</strong>
+                <p>
+                  We don't track what's in your PDFs or collect any document
+                  data
+                </p>
+              </div>
+            </div>
+            <div class="dont-item">
+              <i class="fas fa-times-circle"></i>
+              <div>
+                <strong>No Cloud Storage</strong>
+                <p>
+                  Your files don't go to AWS, Google Cloud, or any cloud service
+                </p>
+              </div>
+            </div>
+            <div class="dont-item">
+              <i class="fas fa-times-circle"></i>
+              <div>
+                <strong>No Quality Degradation</strong>
+                <p>
+                  Pages are copied, not re-encoded - original quality preserved
+                </p>
+              </div>
+            </div>
+            <div class="dont-item">
+              <i class="fas fa-times-circle"></i>
+              <div>
+                <strong>No Cookies for Tracking</strong>
+                <p>
+                  The only local storage we use is for your theme preference
+                  (dark/light mode)
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Open Source -->
+        <section class="doc-section">
+          <h3 class="section-title">
+            <i class="fas fa-code"></i> Open Source & Transparent
+          </h3>
+          <div class="doc-card">
+            <p>
+              PageSwap is completely open source. You can inspect every line of
+              code on our
+              <a href="https://github.com/sukantsondhi/PageSwap" target="_blank"
+                >GitHub repository</a
+              >. The entire application consists of three files:
+            </p>
+            <ul class="file-list">
+              <li><code>index.html</code> - The page structure</li>
+              <li><code>styles.css</code> - Visual styling</li>
+              <li><code>app.js</code> - All the PDF processing logic</li>
+            </ul>
+            <p>
+              You can download the entire project and run it locally - it will
+              work exactly the same because there's no server-side component!
+            </p>
+            <a
+              href="https://github.com/sukantsondhi/PageSwap"
+              target="_blank"
+              class="github-btn"
+            >
+              <i class="fab fa-github"></i> View on GitHub
+            </a>
+          </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="doc-section">
+          <h3 class="section-title">
+            <i class="fas fa-question-circle"></i> Frequently Asked Questions
+          </h3>
+
+          <div class="faq-list">
+            <div class="faq-item">
+              <h4>Is there a file size limit?</h4>
+              <p>
+                Since processing happens in your browser, limits depend on your
+                device's available memory. Modern browsers can typically handle
+                PDFs up to 100-200MB comfortably. Very large files might be slow
+                but will still work.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <h4>Does this work offline?</h4>
+              <p>
+                After the initial page load, yes! The JavaScript libraries are
+                cached by your browser. You can even save the page locally and
+                use it completely offline.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <h4>What browsers are supported?</h4>
+              <p>
+                PageSwap works on all modern browsers: Chrome, Firefox, Safari,
+                Edge. We recommend using the latest version for best
+                performance.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <h4>Can I merge PDFs from different sources?</h4>
+              <p>
+                Absolutely! Upload multiple PDFs and arrange pages from
+                different files in any order you like.
+              </p>
+            </div>
+
+            <div class="faq-item">
+              <h4>Why is this free?</h4>
+              <p>
+                We believe essential document tools should be accessible to
+                everyone. There are no premium tiers, no "upload limits," no
+                watermarks. If you want to support development, you can
+                <a
+                  href="https://www.buymeacoffee.com/sukantsondhi"
+                  target="_blank"
+                  >buy me a coffee</a
+                >.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Back to App -->
+        <section class="doc-section center">
+          <a href="index.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to PageSwap
+          </a>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>
+          Created with <i class="fas fa-heart"></i> by
+          <strong>Sukant Sondhi</strong>
+        </p>
+        <div class="footer-links">
+          <a href="mailto:page-swap@sukantsondhi.com"
+            ><i class="fas fa-envelope"></i> Contact</a
+          >
+          <a href="https://github.com/sukantsondhi/PageSwap" target="_blank"
+            ><i class="fab fa-github"></i> GitHub</a
+          >
+          <a href="https://www.buymeacoffee.com/sukantsondhi" target="_blank"
+            ><i class="fas fa-mug-hot"></i> Support</a
+          >
+        </div>
+        <p class="copyright">&copy; 2024 PageSwap. All rights reserved.</p>
+      </footer>
+    </div>
+
+    <script>
+      // Theme toggle for documentation page
+      document.addEventListener("DOMContentLoaded", () => {
+        const themeToggle = document.getElementById("theme-toggle");
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener("click", () => {
+          const currentTheme =
+            document.documentElement.getAttribute("data-theme");
+          const newTheme = currentTheme === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", newTheme);
+          localStorage.setItem("theme", newTheme);
+          updateThemeIcon(newTheme);
+        });
+
+        function updateThemeIcon(theme) {
+          const icon = themeToggle.querySelector("i");
+          icon.className = theme === "dark" ? "fas fa-sun" : "fas fa-moon";
+        }
+      });
+    </script>
+  </body>
+</html>
