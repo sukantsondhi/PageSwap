@@ -507,6 +507,108 @@ body {
   transform: scale(1.1);
 }
 
+/* Drag Handle */
+.drag-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.3) 70%,
+    transparent 100%
+  );
+  color: white;
+  cursor: grab;
+  z-index: 15;
+  font-size: 1.1rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.page-card:hover .drag-handle {
+  opacity: 1;
+}
+
+/* Mobile Reorder Buttons */
+.page-reorder-btns {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 15;
+}
+
+.page-move-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(92, 124, 250, 0.9);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.page-move-btn:hover {
+  background: var(--accent);
+  transform: scale(1.1);
+}
+
+.page-move-btn:active {
+  transform: scale(0.95);
+}
+
+/* Show reorder buttons and drag handle on touch devices and mobile */
+@media (hover: none) and (pointer: coarse) {
+  .page-reorder-btns {
+    display: flex;
+  }
+
+  .drag-handle {
+    opacity: 1;
+    width: 36px;
+    background: linear-gradient(
+      90deg,
+      rgba(92, 124, 250, 0.85) 0%,
+      rgba(92, 124, 250, 0.5) 60%,
+      transparent 100%
+    );
+  }
+
+  .page-card {
+    touch-action: pan-y;
+  }
+
+  .page-delete {
+    opacity: 1;
+  }
+}
+
+/* Sortable fallback styles */
+.sortable-fallback {
+  opacity: 0.9;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
 /* Export Section */
 .export-section {
   display: flex;
@@ -686,6 +788,37 @@ body {
   .drop-zone i {
     font-size: 3rem;
   }
+
+  /* Show reorder buttons on mobile */
+  .page-reorder-btns {
+    display: flex;
+  }
+
+  .page-delete {
+    opacity: 1;
+  }
+
+  .page-move-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .drag-handle {
+    opacity: 1;
+    width: 32px;
+    background: linear-gradient(
+      90deg,
+      rgba(92, 124, 250, 0.85) 0%,
+      rgba(92, 124, 250, 0.5) 60%,
+      transparent 100%
+    );
+  }
+
+  .page-card {
+    touch-action: pan-y;
+    cursor: default;
+  }
 }
 
 @media (max-width: 480px) {
@@ -704,6 +837,23 @@ body {
 
   .why-card {
     padding: 20px;
+  }
+
+  /* Smaller reorder buttons on very small screens */
+  .page-move-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+
+  .page-reorder-btns {
+    gap: 6px;
+    right: 5px;
+  }
+
+  .drag-handle {
+    width: 28px;
+    font-size: 0.95rem;
   }
 }
 

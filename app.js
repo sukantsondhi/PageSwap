@@ -112,7 +112,13 @@ function initSortable() {
     ghostClass: "sortable-ghost",
     chosenClass: "sortable-chosen",
     dragClass: "sortable-drag",
-    handle: ".page-card",
+    handle: ".drag-handle", // Use drag handle for dragging
+    // Touch device support
+    delay: 0, // No delay when using handle
+    touchStartThreshold: 3, // Pixels of movement before drag starts
+    forceFallback: true, // Use fallback for better cross-browser support
+    fallbackClass: "sortable-fallback",
+    fallbackTolerance: 3,
     onEnd: function (evt) {
       // Update pages array to match new order
       const movedPage = pages.splice(evt.oldIndex, 1)[0];
@@ -439,6 +445,39 @@ function createPageCard(page, index) {
     deletePage(page.id);
   });
 
+  // Drag handle for reordering (left side dots)
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "drag-handle";
+  dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+  dragHandle.title = "Drag to reorder";
+
+  // Mobile reorder buttons container
+  const reorderBtns = document.createElement("div");
+  reorderBtns.className = "page-reorder-btns";
+
+  // Move up button
+  const moveUpBtn = document.createElement("button");
+  moveUpBtn.className = "page-move-btn move-up";
+  moveUpBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+  moveUpBtn.title = "Move up";
+  moveUpBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    movePageUp(page.id);
+  });
+
+  // Move down button
+  const moveDownBtn = document.createElement("button");
+  moveDownBtn.className = "page-move-btn move-down";
+  moveDownBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+  moveDownBtn.title = "Move down";
+  moveDownBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    movePageDown(page.id);
+  });
+
+  reorderBtns.appendChild(moveUpBtn);
+  reorderBtns.appendChild(moveDownBtn);
+
   // Clone canvas for display
   const displayCanvas = document.createElement("canvas");
   displayCanvas.width = page.canvas.width;
@@ -464,10 +503,32 @@ function createPageCard(page, index) {
 
   card.appendChild(checkbox);
   card.appendChild(deleteBtn);
+  card.appendChild(dragHandle);
+  card.appendChild(reorderBtns);
   card.appendChild(displayCanvas);
   card.appendChild(pageInfo);
 
   return card;
+}
+
+// Move page up in the order
+function movePageUp(pageId) {
+  const index = pages.findIndex((p) => p.id === pageId);
+  if (index > 0) {
+    const page = pages.splice(index, 1)[0];
+    pages.splice(index - 1, 0, page);
+    renderPages();
+  }
+}
+
+// Move page down in the order
+function movePageDown(pageId) {
+  const index = pages.findIndex((p) => p.id === pageId);
+  if (index < pages.length - 1) {
+    const page = pages.splice(index, 1)[0];
+    pages.splice(index + 1, 0, page);
+    renderPages();
+  }
 }
 
 // Update page numbers after reordering
