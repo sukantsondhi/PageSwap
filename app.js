@@ -183,7 +183,7 @@ async function processFiles(files) {
     updateUI();
   } catch (error) {
     console.error("Error processing files:", error);
-    alert("Error processing files. Please try again.");
+    alert(error.message || "Error processing files. Please try again.");
   }
 
   hideLoading();
@@ -193,11 +193,39 @@ async function processFiles(files) {
 async function processImage(file) {
   loadingText.textContent = `Processing ${file.name}...`;
 
+  // Check for HEIC/HEIF which aren't natively supported by browsers
+  const isHeic =
+    file.name.toLowerCase().endsWith(".heic") ||
+    file.name.toLowerCase().endsWith(".heif");
+  if (isHeic) {
+    throw new Error(
+      `HEIC/HEIF format is not supported directly by browsers. Please convert "${file.name}" to JPEG or PNG first.`,
+    );
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       const img = new Image();
+
+      // Add timeout for image loading (10 seconds)
+      const timeout = setTimeout(() => {
+        reject(
+          new Error(
+            `Timeout loading image: ${file.name}. The file may be too large or corrupted.`,
+          ),
+        );
+      }, 10000);
+
       img.onload = () => {
+        clearTimeout(timeout);
+
+        // Validate image dimensions
+        if (img.width === 0 || img.height === 0) {
+          reject(new Error(`Invalid image dimensions for: ${file.name}`));
+          return;
+        }
+
         // Create canvas for the image
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
@@ -235,8 +263,14 @@ async function processImage(file) {
 
         resolve();
       };
-      img.onerror = () =>
-        reject(new Error(`Failed to load image: ${file.name}`));
+      img.onerror = () => {
+        clearTimeout(timeout);
+        reject(
+          new Error(
+            `Failed to load image: ${file.name}. The format may not be supported by your browser.`,
+          ),
+        );
+      };
       img.src = e.target.result;
     };
     reader.onerror = () =>
@@ -250,9 +284,77 @@ async function processPDF(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdfBytes = new Uint8Array(arrayBuffer);
 
-  // Load with PDF.js for rendering
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
-  const pdf = await loadingTask.promise;
+  // Validate PDF - check for %PDF- header within first 1024 bytes
+  if (pdfBytes.length < 5) {
+    throw new Error(`"${file.name}" is too small to be a valid PDF file.`);
+  }
+
+  // Look for %PDF- header within first 1024 bytes (some PDFs have extra bytes before header)
+  let foundPdfHeader = false;
+  const searchLimit = Math.min(pdfBytes.length, 1024);
+  for (let i = 0; i < searchLimit - 4; i++) {
+    if (
+      pdfBytes[i] === 0x25 &&
+      pdfBytes[i + 1] === 0x50 &&
+      pdfBytes[i + 2] === 0x44 &&
+      pdfBytes[i + 3] === 0x46
+    ) {
+      // Found %PDF
+      foundPdfHeader = true;
+      break;
+    }
+  }
+
+  if (!foundPdfHeader) {
+    throw new Error(
+      `"${file.name}" does not appear to be a valid PDF file. It may have the wrong file extension or be corrupted.`,
+    );
+  }
+
+  // Load with PDF.js for rendering (with password handling)
+  let pdf;
+  try {
+    const loadingTask = pdfjsLib.getDocument({
+      data: pdfBytes.slice(),
+      // Try to handle owner-password-only PDFs (viewing allowed but editing restricted)
+      password: "",
+    });
+
+    // Handle password prompt
+    loadingTask.onPassword = (updateCallback, reason) => {
+      if (reason === pdfjsLib.PasswordResponses.NEED_PASSWORD) {
+        throw new Error(
+          `"${file.name}" is password-protected. Please unlock it first using Adobe Reader or another PDF tool, then save an unlocked copy.`,
+        );
+      } else if (reason === pdfjsLib.PasswordResponses.INCORRECT_PASSWORD) {
+        throw new Error(`"${file.name}" requires a password to open.`);
+      }
+    };
+
+    pdf = await loadingTask.promise;
+  } catch (loadError) {
+    console.error(`Error loading PDF "${file.name}":`, loadError);
+
+    // Provide specific error messages
+    const errorMsg = loadError.message || "";
+    if (
+      errorMsg.includes("password") ||
+      errorMsg.includes("Password") ||
+      errorMsg.includes("encrypted")
+    ) {
+      throw new Error(
+        `"${file.name}" is protected. Bank statements are often encrypted. Try: 1) Open in Adobe Reader, 2) Print to PDF to create an unlocked copy.`,
+      );
+    } else if (errorMsg.includes("Invalid PDF")) {
+      throw new Error(
+        `"${file.name}" appears to be corrupted or is not a standard PDF.`,
+      );
+    } else {
+      throw new Error(
+        `Failed to load "${file.name}": ${errorMsg || "The PDF may be corrupted or protected."}`,
+      );
+    }
+  }
 
   loadingText.textContent = `Processing ${file.name}...`;
 
@@ -434,6 +536,13 @@ async function exportPDF() {
   showLoading("Creating PDF...");
 
   try {
+    // Check if PDFLib is available
+    if (typeof PDFLib === "undefined") {
+      throw new Error(
+        "PDF library not loaded. Please refresh the page and try again.",
+      );
+    }
+
     // Create a new PDF document
     const { PDFDocument } = PDFLib;
     const mergedPdf = await PDFDocument.create();
@@ -447,6 +556,7 @@ async function exportPDF() {
         if (!sourceMap.has(key)) {
           sourceMap.set(key, {
             pdfBytes: page.pdfBytes,
+            sourceName: page.sourceName,
             pageIndices: [],
           });
         }
@@ -457,12 +567,59 @@ async function exportPDF() {
       }
     }
 
-    // Load source PDFs
+    // Load source PDFs with validation
     const loadedPdfs = new Map();
 
     for (const [key, data] of sourceMap) {
-      const srcPdf = await PDFDocument.load(data.pdfBytes);
-      loadedPdfs.set(key, srcPdf);
+      // Validate PDF bytes exist
+      if (!data.pdfBytes || data.pdfBytes.length < 5) {
+        throw new Error(
+          `Invalid PDF data for "${data.sourceName}". The file may be corrupted. Please try uploading it again.`,
+        );
+      }
+
+      // Look for %PDF- header within first 1024 bytes
+      let foundPdfHeader = false;
+      const searchLimit = Math.min(data.pdfBytes.length, 1024);
+      for (let i = 0; i < searchLimit - 4; i++) {
+        if (
+          data.pdfBytes[i] === 0x25 &&
+          data.pdfBytes[i + 1] === 0x50 &&
+          data.pdfBytes[i + 2] === 0x44 &&
+          data.pdfBytes[i + 3] === 0x46
+        ) {
+          foundPdfHeader = true;
+          break;
+        }
+      }
+
+      if (!foundPdfHeader) {
+        throw new Error(
+          `"${data.sourceName}" does not appear to be a valid PDF file. Please try uploading it again.`,
+        );
+      }
+
+      try {
+        const srcPdf = await PDFDocument.load(data.pdfBytes, {
+          ignoreEncryption: true,
+        });
+        loadedPdfs.set(key, srcPdf);
+      } catch (loadError) {
+        console.error(`Error loading PDF "${data.sourceName}":`, loadError);
+        const errorMsg = loadError.message || "";
+        if (
+          errorMsg.includes("encrypt") ||
+          errorMsg.includes("password") ||
+          errorMsg.includes("Password")
+        ) {
+          throw new Error(
+            `"${data.sourceName}" has security restrictions preventing export. Try: Open in Adobe Reader → Print → Save as PDF to create an unlocked copy.`,
+          );
+        }
+        throw new Error(
+          `Failed to process "${data.sourceName}": ${errorMsg || "The PDF may be corrupted or have security restrictions."}`,
+        );
+      }
     }
 
     // Process pages in order
@@ -480,34 +637,41 @@ async function exportPDF() {
           page.pageIndex,
         ]);
         mergedPdf.addPage(copiedPage);
-      } else if (page.type === "image" && page.imageData) {
-        // Embed image as a page
-        let img;
-        const dataUrl = page.imageData;
-
-        if (dataUrl.includes("image/png")) {
-          const base64 = dataUrl.split(",")[1];
-          const imgBytes = Uint8Array.from(atob(base64), (c) =>
-            c.charCodeAt(0),
-          );
-          img = await mergedPdf.embedPng(imgBytes);
-        } else if (
-          dataUrl.includes("image/jpeg") ||
-          dataUrl.includes("image/jpg")
+      } else if (page.type === "image") {
+        // Validate canvas exists and has valid dimensions
+        if (
+          !page.canvas ||
+          page.canvas.width === 0 ||
+          page.canvas.height === 0
         ) {
-          const base64 = dataUrl.split(",")[1];
-          const imgBytes = Uint8Array.from(atob(base64), (c) =>
-            c.charCodeAt(0),
+          console.error(
+            `Invalid canvas for page ${i + 1} (${page.sourceName})`,
           );
-          img = await mergedPdf.embedJpg(imgBytes);
-        } else {
-          // For other formats, convert canvas to PNG
+          throw new Error(
+            `Failed to process image "${page.sourceName}". The image may be corrupted or in an unsupported format.`,
+          );
+        }
+
+        // Embed image as a page - always convert to PNG for compatibility
+        let img;
+        try {
           const pngDataUrl = page.canvas.toDataURL("image/png");
           const base64 = pngDataUrl.split(",")[1];
+          if (!base64) {
+            throw new Error("Failed to convert image to PNG format.");
+          }
           const imgBytes = Uint8Array.from(atob(base64), (c) =>
             c.charCodeAt(0),
           );
           img = await mergedPdf.embedPng(imgBytes);
+        } catch (embedError) {
+          console.error(
+            `Error embedding image ${page.sourceName}:`,
+            embedError,
+          );
+          throw new Error(
+            `Failed to embed image "${page.sourceName}" into PDF. Please try a different image format.`,
+          );
         }
 
         // Create a page with the image dimensions (convert pixels to points: 72 points = 1 inch, assuming 96 DPI)
@@ -538,7 +702,7 @@ async function exportPDF() {
     downloadBlob(pdfBytes, filename, "application/pdf");
   } catch (error) {
     console.error("Error exporting PDF:", error);
-    alert("Error creating PDF. Please try again.");
+    alert(error.message || "Error creating PDF. Please try again.");
   }
 
   hideLoading();
